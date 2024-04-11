@@ -1,0 +1,121 @@
+---
+title: "Usar tablas de pyhton en R"
+author: "---"
+date: "2024-04-11"
+output: html_document
+---
+
+```{r}
+rm(list = ls())
+denguelink1='https://github.com/SocialAnalytics-StrategicIntelligence/TableOperations/raw/main/dataFiles/ByYear_LongStats.pkl'
+
+library(reticulate)
+```
+
+
+```{r}
+
+# py_install("pandas") # install pandas for R environment
+pd <- import("pandas")
+
+dengueLongStats <- pd$read_pickle(denguelink1)
+
+
+str(dengueLongStats) 
+```
+
+```{r}
+
+library(ggplot2)
+
+facets= ggplot(data=dengueLongStats,
+               aes(x=ano,y=statsValue,color=enfermedad)) + theme_light() +
+    scale_y_log10(labels=scales::comma) 
+facets +    
+    geom_smooth()  + 
+    facet_grid(statsName~.,scales = 'free_y') 
+
+```
+
+```{r}
+facets +
+    geom_line() + 
+    facet_grid(statsName~.,scales = 'free_y') 
+```
+¿Provincias más afectadas a lo largo de los años?
+
+Los datos peor_ProvYear_alarma_Frequency nos dicen la frecuencia de la peor provincia por región por año:
+
+```{r}
+denguelink2='https://github.com/SocialAnalytics-StrategicIntelligence/TableOperations/raw/main/dataFiles/worst_ProvYear_alarma_Frequency.csv'
+
+dengueProvWorst <- read.csv(denguelink2)
+
+
+str(dengueProvWorst) 
+```
+Por ejemplo, LORETO tiene datos de 14 años:
+
+```{r}
+dengueProvWorst[dengueProvWorst$departamento=='LORETO',]
+```
+
+En un año, ALTO AMAZONAS fue el peor caso de personas en situación de alarma ; mientras que MAYNAS ocupó ese cargo durante 13 años.
+
+¿Cuáles son los peores casos?
+
+
+```{r}
+dengueProvWorst[order(-dengueProvWorst$case),]
+```
+
+Pudimos ver la distribución de las peores provincias:
+
+
+```{r}
+baseHeat  = ggplot(dengueProvWorst, aes(x = reorder(departamento,case), y = reorder(provincia,case), fill=case)) + theme_classic()
+heatDefault = baseHeat +  geom_tile() #here
+
+heatBetter=heatDefault +scale_fill_gradient(low = 'yellow',high = 'black')
+heatBetter + theme(axis.text.x = element_text(angle = 60,vjust = 1,hjust = 1),
+                   axis.text.y = element_text(size=4)) +
+                   geom_text(aes(label=ifelse(case>=10,case,"")),
+                             size=6,fontface='bold', color='white')
+```
+Veamos la información sobre rateAlarma:
+
+```{r}
+denguelink3='https://raw.githubusercontent.com/SocialAnalytics-StrategicIntelligence/TableOperations/main/dataFiles/ByYearPlace.pkl'
+
+dengueYearPlace <- pd$read_pickle(denguelink3)
+
+str(dengueYearPlace) 
+```
+Estadísticas básicas:
+
+```{r}
+summary(dengueYearPlace)
+```
+¿Donde y cuando?
+
+```{r}
+# default 
+
+baseHeat  = ggplot(dengueYearPlace, aes(x = as.factor(ano),
+                                       y =reorder(departamento,
+                                                  rateAlarma), 
+                                       fill=rateAlarma.cut)) + theme_classic()
+heatDefault = baseHeat +  geom_tile(show.legend = T) #here
+
+heatBetter=heatDefault +scale_fill_brewer(palette = "Reds")
+heatBetter + theme(axis.text.x = element_text(angle = 60,vjust = 1,hjust = 1),
+                   axis.text.y = element_text(size=4))
+```
+
+
+
+
+
+
+
+
